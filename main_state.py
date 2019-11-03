@@ -1,40 +1,50 @@
 from pico2d import *
-
-open_canvas()           # FRAME * 110, 1030, 160, 170, x, 120
+import game_framework
+import game_over_state
+import pause_state
 
 running = True
 i = 0
 dir = 0
 dir_y = 0
-vector = 6
+vector = 15
 adjust_on = False
 
-class Girl:
+
+class Boy:
     def __init__(self):
         self.x, self.y = 400, 0
         self.frame = 0
-        self.vector = 6
+        self.HP = 100
+        self.vector = 15
         self.hit_count = 0
-        self.image = load_image('character_animation.png')
+        self.image = load_image('Adventurer Sprite Sheet v1.1.png')
 
     def update(self, dir, dir_y, vector):
-        self.frame = (self.frame+1) % 5
+        self.frame = (self.frame+1) % 8
         self.x += dir * 5
         self.y = dir_y * 10
         self.vector = vector
 
     def draw(self):
-        self.image.clip_draw(self.frame * 96, self.vector * 96, 96, 96, self.x, 90 + self.y)
+        self.image.clip_draw(self.frame * 32, self.vector * 32, 32, 32, self.x, 108 + self.y, 100, 100)
 
     def damaged(self, damaged):
+        self.HP -= damaged
         self.hit_count += 1
-        hp_bar.decrease_HP(damaged)
+        hp_bar.decrease_HP()
         if (self.vector == 4):
             self.vector = 0
             self.image.clip_draw(self.frame * 96, self.vector * 96, 96, 96, self.x, 90 + self.y)
         elif (self.vector == 5):
             self.vector = 1
             self.image.clip_draw(self.frame * 96, self.vector * 96, 96, 96, self.x, 90 + self.y)
+
+    def game_over(self):
+        if self.HP <= 0:
+            game_framework.change_state(game_over_state)
+
+
 
 class Background:
     def __init__(self):
@@ -43,6 +53,7 @@ class Background:
 
     def draw(self):
         self.image.draw(self.x, self.y)
+
 
 class Ground:
     def __init__(self):
@@ -55,9 +66,9 @@ class Ground:
         for i in range(0, 11+1):
             self.image_middle.draw(64 + 64 * i, self.y)
 
+
 class HP_BAR:
     def __init__(self):
-        self.HP = 100
         self.damaging = False
         self.image = load_image('HP_Bar.png')
         self.damaged_image = load_image('Damaged_HP_Bar_part.png')
@@ -65,9 +76,9 @@ class HP_BAR:
     def draw(self):
         self.image.draw(150, 550)
 
-    def decrease_HP(self, damage):
-        self.HP -= damage
+    def decrease_HP(self):
         self.damaging = True
+
 
 class Spike:
     def __init__(self):
@@ -76,6 +87,7 @@ class Spike:
 
     def draw(self):
         self.image.draw(self.x, self.y)
+
 
 class Monster_bear:
     def __init__(self):
@@ -89,6 +101,7 @@ class Monster_bear:
     def draw(self):
         self.image.draw(self.x, self.y)
 
+
 class Monster_mage:
     def __init__(self):
         self.x, self.y = 100, 95
@@ -100,7 +113,7 @@ class Monster_mage:
     def update(self):
         self.frame = (self.frame+1) % 8
         self.a_frame = (self.a_frame+1) % 5
-        delay(0.05)
+        delay(0.03)
 
     def draw(self):
         self.image.clip_draw(self.frame * 89, 0, 89, 89, self.x, self.y)
@@ -117,24 +130,24 @@ def handle_events():
     events = get_events()
     for event in events:
         if event.type == SDL_QUIT:
-            running = False
+            game_framework.quit()
         elif event.type == SDL_KEYDOWN:
             if event.key == SDLK_RIGHT:
                 dir += 1
-                vector = 4
+                vector = 14
             elif event.key == SDLK_LEFT:
                 dir -= 1
-                vector = 5
+                vector = 6
             elif event.key == SDLK_x:
                 work_adjust_jump()
             elif event.key == SDLK_z:
                 pass
-            elif event.key == SDLK_ESCAPE:
-                running = False
+            elif event.key == SDLK_p:
+                game_framework.push_state(pause_state)
         elif event.type == SDL_KEYUP:
             if event.key == SDLK_RIGHT:
                 dir -= 1
-                vector = 6
+                vector = 15
             elif event.key == SDLK_LEFT:
                 dir += 1
                 vector = 7
@@ -175,42 +188,65 @@ def work_adjust_jump():
 
 def black_HP():
     if hp_bar.damaging:
-        for i in range(girl.hit_count):
+        for i in range(boy.hit_count):
             if i <= 21:
                 hp_bar.damaged_image.draw(263 - i * 11, 550)
 
-girl = Girl()
-background = Background()
-ground = Ground()
-hp_bar = HP_BAR()
-spike = Spike()
-bear = Monster_bear()
-mage = Monster_mage()
 
-while running:
+def enter():
+    global boy, ground, background, hp_bar, spike, bear, mage
+    boy = Boy()
+    ground = Ground()
+    background = Background()
+    hp_bar = HP_BAR()
+    spike = Spike()
+    bear = Monster_bear()
+    mage = Monster_mage()
+
+
+def exit():
+    global boy, ground, background, hp_bar, spike, bear, mage
+    del boy
+    del ground
+    del background
+    del hp_bar
+    del spike, bear, mage
+
+
+def pause():
+    pass
+
+
+def resume():
+    pass
+
+
+def update():
+    boy.update(dir, dir_y, vector)
+    bear.update()
+    mage.update()
+    adjust_jump()
+    if (boy.x > 680 and boy.x < 720 and boy.y <= 50):
+        boy.damaged(4)
+    if (boy.x > 200 and boy.x < 240 and boy.y <= 50):
+        boy.damaged(4)
+    if (boy.x > 460 and boy.x < 500 and boy.y <= 50):
+        boy.damaged(4)
+
+    boy.game_over()
+    delay(0.01)
+
+
+def draw():
+    global boy, ground, background, hp_bar, spike, bear, mage
     clear_canvas()
-
     background.draw()
     ground.draw()
-    hp_bar.draw()
+    boy.draw()
     spike.draw()
-    if (girl.x > 680 and girl.x < 720 and girl.y <= 50):
-        girl.damaged(50)
-    if (girl.x > 200 and girl.x < 240 and girl.y <= 50):
-        girl.damaged(50)
-    if (girl.x > 460 and girl.x < 500 and girl.y <= 50):
-        girl.damaged(50)
-    black_HP()
-    girl.draw()
-    girl.update(dir, dir_y, vector)
     bear.draw()
-    bear.update()
     mage.draw()
-    mage.update()
-
+    hp_bar.draw()
+    black_HP()
     update_canvas()
-    handle_events()
-    adjust_jump()
-    delay(0.03)
 
-close_canvas()
