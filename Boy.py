@@ -1,9 +1,12 @@
 from pico2d import *
 import game_framework
+import game_world
 import game_over_state
 import pause_state
 
+
 from hp_bar import HP_BAR
+from heat_box import Heat_box
 
 PIXEL_PER_METER = (10.0 / 0.3)
 RUN_SPEED_KMPH = 20.0
@@ -27,9 +30,6 @@ key_event_table = {
     (SDL_KEYUP, SDLK_LEFT): LEFT_UP,
     (SDL_KEYDOWN, SDLK_x): PRESS_X
 }
-
-
-dir_y = 0
 
 class IdleState:
     @staticmethod
@@ -130,11 +130,13 @@ class JumpState:
             boy.velocity += RUN_SPEED_PPS
             boy.dir = 0
 
+        boy.jump_timer = 10
+
     @staticmethod
     def exit(boy, event):
         boy.jump_timer_other = boy.jump_timer               # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
 
-        boy.jump_timer = 20
+        boy.jump_timer = 10
 
     @staticmethod
     def do(boy):
@@ -165,19 +167,16 @@ class AttackState:
 
     @staticmethod
     def exit(boy, event):
-        boy.attack_count = 0
+        if boy.attack_count >= 3:
+            boy.attack_count = 0
 
     @staticmethod
     def do(boy):
         boy.frame = (boy.frame + FRAMES_PER_ATTACK * ACTION_PER_TIME * game_framework.frame_time) % 10
 
-        if boy.frame > 9:
-            boy.add_event(TIME_OUT)
 
     @staticmethod
     def draw(boy):
-        global dir_y
-
         if boy.attack_count == 1:
             if boy.dir == 1:
                 boy.image.clip_draw(int(boy.frame) * 32, 416, 32, 32, boy.x, boy.y, 100, 100)
@@ -213,9 +212,11 @@ class Boy:
     def __init__(self):
         self.x, self.y = 400, 108
         self.image = load_image('Adventurer Sprite Sheet v1.1.png')
+        self.image_dash = load_image('dash_effect.png')
         self.dir = 1
-        self.jump_timer = 20
+        self.jump_timer = 10
         self.jump_timer_other = 0
+        self.stop_jump_while_dash = 0
         self.velocity = 0
         self.frame = 0
         self.HP = 100
@@ -225,7 +226,21 @@ class Boy:
         self.cur_state.enter(self, None)
 
     def get_bb(self):
-        return self.x - 50, self.y - 50, self.x + 50, self.y + 50
+        if self.dir == 1:
+            return self.x - 35, self.y - 50, self.x + 25, self.y + 20
+        else:
+            return self.x - 25, self.y - 50, self.x + 35, self.y + 20
+
+    def act_attack(self):
+        pass
+
+    def act_dash(self):
+        if self.dir == 1:
+            self.x += 30
+        else:
+            self.x -= 30
+
+        self.jump_timer = 0
 
     def update_state(self):
         if len(self.event_que) > 0:
@@ -238,8 +253,6 @@ class Boy:
         self.event_que.insert(0, event)
 
     def update(self):
-        global dir_y
-
         self.cur_state.do(self)
         if len(self.event_que) > 0:
             event = self.event_que.pop()
@@ -247,7 +260,8 @@ class Boy:
             self.cur_state = next_state_table[self.cur_state][event]
             self.cur_state.enter(self, event)
 
-        print(self.cur_state)
+        self.HP = clamp(0, self.HP, 100)
+        print(self.HP)
 
 
     def draw(self):
@@ -262,6 +276,5 @@ class Boy:
     def damaged(self, damaged):
         self.HP -= damaged
 
-    def game_over(self):
-        if self.HP <= 0:
-            game_framework.change_state(game_over_state)
+    def recovery(self, cure):
+        self.HP += cure

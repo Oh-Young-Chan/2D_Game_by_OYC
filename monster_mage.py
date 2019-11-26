@@ -21,3 +21,7 @@ class Monster_mage:
     def draw(self):
         self.image.clip_draw(int(self.frame) * 89, 0, 89, 89, self.x, self.y)
         self.attack_image.clip_draw(int(self.a_frame) * 16, 0, 16, 9, 180 + (self.a_frame*5), 90, 40, 40)
+        draw_rectangle(*self.get_bb())
+
+    def get_bb(self):
+        return self.x - 50, self.y - 35, self.x + 30, self.y + 45

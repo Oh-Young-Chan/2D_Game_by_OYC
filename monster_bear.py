@@ -12,3 +12,7 @@ class Monster_bear:
 
     def draw(self):
         self.image.draw(self.x, self.y)
+        draw_rectangle(*self.get_bb())
+
+    def get_bb(self):
+        return self.x - 60, self.y - 60, self.x + 60, self.y + 60
