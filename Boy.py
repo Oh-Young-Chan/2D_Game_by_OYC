@@ -14,6 +14,11 @@ RUN_SPEED_MPM = (RUN_SPEED_KMPH * 1000.0 / 60.0)
 RUN_SPEED_MPS = (RUN_SPEED_MPM / 60.0)
 RUN_SPEED_PPS = (RUN_SPEED_MPS * PIXEL_PER_METER)
 
+DASH_SPEED_KMPH = 60.0
+DASH_SPEED_MPM = (DASH_SPEED_KMPH * 1000.0 / 60.0)
+DASH_SPEED_MPS = (DASH_SPEED_MPM / 60.0)
+DASH_SPEED_PPS = (DASH_SPEED_MPS * PIXEL_PER_METER)
+
 TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_IDLE = 13
@@ -64,12 +69,22 @@ class IdleState:
             boy.y -= 10
             boy.y = clamp(108, boy.y, 500)
 
+        if boy.dash_timer != 0:
+            boy.dash_timer -= 1
+            boy.dash_timer = clamp(0, boy.dash_timer, 10)
+            print(boy.dash_timer)
+
     @staticmethod
     def draw(boy):
         if boy.dir == 1:
             boy.image.clip_draw(int(boy.frame) * 32, 480, 32, 32, boy.x, boy.y, 100, 100)
         else:
             boy.image.clip_draw(int(boy.frame) * 32, 224, 32, 32, boy.x, boy.y, 100, 100)
+        if boy.dash_timer != 0:
+            if boy.dir == 1:
+                boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, '', boy.x - 60, boy.y - 15, 100, 30)
+            else:
+                boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, 'v', boy.x + 60, boy.y - 15, 100, 30)
 
 
 class RunState:
@@ -105,6 +120,11 @@ class RunState:
             boy.y -= 10
             boy.y = clamp(108, boy.y, 500)
 
+        if boy.dash_timer != 0:
+            boy.dash_timer -= 1
+            boy.dash_timer = clamp(0, boy.dash_timer, 10)
+            print(boy.dash_timer)
+
 
     @staticmethod
     def draw(boy):
@@ -112,6 +132,11 @@ class RunState:
             boy.image.clip_draw(int(boy.frame) * 32, 448, 32, 32, boy.x, boy.y, 100, 100)
         else:
             boy.image.clip_draw(int(boy.frame) * 32, 192, 32, 32, boy.x, boy.y, 100, 100)
+        if boy.dash_timer != 0:
+            if boy.dir == 1:
+                boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, '', boy.x - 60, boy.y - 15, 100, 30)
+            else:
+                boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, 'v', boy.x + 60, boy.y - 15, 100, 30)
 
 
 class JumpState:
@@ -151,6 +176,11 @@ class JumpState:
             boy.y -= 10
             boy.y = clamp(108, boy.y, 500)
 
+        if boy.dash_timer != 0:
+            boy.dash_timer -= 1
+            boy.dash_timer = clamp(0, boy.dash_timer, 10)
+            print(boy.dash_timer)
+
 
     @staticmethod
     def draw(boy):
@@ -158,6 +188,11 @@ class JumpState:
             boy.image.clip_draw(int(boy.frame) * 32, 448, 32, 32, boy.x, boy.y, 100, 100)
         else:
             boy.image.clip_draw(int(boy.frame) * 32, 192, 32, 32, boy.x, boy.y, 100, 100)
+        if boy.dash_timer != 0:
+            if boy.dir == 1:
+                boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, '', boy.x - 60, boy.y - 15, 100, 30)
+            else:
+                boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, 'v', boy.x + 60, boy.y - 15, 100, 30)
 
 
 class AttackState:
@@ -217,6 +252,7 @@ class Boy:
         self.jump_timer = 10
         self.jump_timer_other = 0
         self.stop_jump_while_dash = 0
+        self.dash_timer = 0
         self.velocity = 0
         self.frame = 0
         self.HP = 100
@@ -236,10 +272,15 @@ class Boy:
 
     def act_dash(self):
         if self.dir == 1:
-            self.x += 30
+            self.velocity += DASH_SPEED_PPS
+            self.x += self.velocity * game_framework.frame_time * 5
+            self.velocity -= DASH_SPEED_PPS
         else:
-            self.x -= 30
+            self.velocity -= DASH_SPEED_PPS
+            self.x += self.velocity * game_framework.frame_time * 5
+            self.velocity += DASH_SPEED_PPS
 
+        self.dash_timer += 10
         self.jump_timer = 0
 
     def update_state(self):

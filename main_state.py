@@ -100,11 +100,11 @@ def update():
         game_object.update()
 
     if collide(boy, Monster_Mage):
-        boy.damaged(1)
+        boy.damaged(0)
     if collide(boy, Monster_Bear):
-        boy.damaged(2)
+        boy.damaged(0)
     if collide(boy, spike):
-        boy.damaged(5)
+        boy.damaged(0)
 
     if collide(boy, Health_Item):
         boy.recovery(50)
