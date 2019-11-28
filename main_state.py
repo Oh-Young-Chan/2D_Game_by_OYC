@@ -17,6 +17,7 @@ from spike import Spike
 from monster_bear import Monster_bear
 from monster_mage import Monster_mage
 from health_item import Health_item
+from heat_box import Heat_box
 
 name = "MainState"
 
@@ -29,6 +30,17 @@ Monster_Mage = None
 Health_Item = None
 spike = None
 font = None
+
+
+def get_boy():
+    return boy
+
+def get_Monster_Bear():
+    return Monster_Bear
+
+def get_Monster_Mage():
+    return Monster_Mage
+
 
 def enter():
     global boy, ground, background, spike, Hp_Bar, Monster_Bear, Monster_Mage, Health_Item
@@ -58,7 +70,6 @@ def exit():
     del Hp_Bar
 
 
-
 def pause():
     pass
 
@@ -66,23 +77,25 @@ def pause():
 def resume():
     pass
 
+
 def handle_events():
     events = get_events()
     for event in events:
         if event.type == SDL_QUIT:
             game_framework.quit()
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
-                game_framework.quit()
+            game_framework.quit()
         elif event.type == SDL_KEYDOWN and event.key == SDLK_p:
-                game_framework.push_state(pause_state)
+            game_framework.push_state(pause_state)
         elif event.type == SDL_KEYDOWN and event.key == SDLK_z:
-                boy.act_attack()
+            boy.act_attack()
         elif event.type == SDL_KEYDOWN and event.key == SDLK_c:
-                boy.act_dash()
+            boy.act_dash()
         else:
             boy.handle_event(event)
     if boy.HP <= 0:
         game_framework.change_state(game_over_state)
+
 
 def collide(a, b):
     left_a, bottom_a, right_a, top_a = a.get_bb()
@@ -95,16 +108,17 @@ def collide(a, b):
 
     return True
 
+
 def update():
     for game_object in game_world.all_objects():
         game_object.update()
 
     if collide(boy, Monster_Mage):
-        boy.damaged(0)
+        boy.damaged(1)
     if collide(boy, Monster_Bear):
-        boy.damaged(0)
+        boy.damaged(3)
     if collide(boy, spike):
-        boy.damaged(0)
+        boy.damaged(5)
 
     if collide(boy, Health_Item):
         boy.recovery(50)
@@ -112,6 +126,7 @@ def update():
         Health_Item.y -= 100
 
     Hp_Bar.update(boy.HP)
+
 
 def draw():
     clear_canvas()

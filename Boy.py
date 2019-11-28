@@ -4,7 +4,6 @@ import game_world
 import game_over_state
 import pause_state
 
-
 from hp_bar import HP_BAR
 from heat_box import Heat_box
 
@@ -25,16 +24,17 @@ FRAMES_PER_IDLE = 13
 FRAMES_PER_RUN = 8
 FRAMES_PER_ATTACK = 10
 
-
-RIGHT_DOWN, LEFT_DOWN, RIGHT_UP, LEFT_UP, PRESS_X = range(5)
+RIGHT_DOWN, LEFT_DOWN, RIGHT_UP, LEFT_UP, PRESS_X, PRESS_Z = range(6)
 
 key_event_table = {
     (SDL_KEYDOWN, SDLK_RIGHT): RIGHT_DOWN,
     (SDL_KEYDOWN, SDLK_LEFT): LEFT_DOWN,
     (SDL_KEYUP, SDLK_RIGHT): RIGHT_UP,
     (SDL_KEYUP, SDLK_LEFT): LEFT_UP,
-    (SDL_KEYDOWN, SDLK_x): PRESS_X
+    (SDL_KEYDOWN, SDLK_x): PRESS_X,
+    (SDL_KEYDOWN, SDLK_z): PRESS_Z
 }
+
 
 class IdleState:
     @staticmethod
@@ -52,6 +52,9 @@ class IdleState:
             boy.velocity += RUN_SPEED_PPS
             boy.dir = 0
 
+        if event == PRESS_Z:
+            boy.act_attack()
+
     @staticmethod
     def exit(boy, event):
         pass
@@ -62,7 +65,7 @@ class IdleState:
         boy.x += boy.velocity * game_framework.frame_time
         boy.x = clamp(25, boy.x, 800 - 25)
 
-        if boy.jump_timer_other > 0:                               # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
+        if boy.jump_timer_other > 0:  # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
             boy.y += 10
             boy.jump_timer_other -= 1
         elif boy.jump_timer_other <= 0:
@@ -72,7 +75,7 @@ class IdleState:
         if boy.dash_timer != 0:
             boy.dash_timer -= 1
             boy.dash_timer = clamp(0, boy.dash_timer, 10)
-            print(boy.dash_timer)
+            boy.y = clamp(boy.y, boy.y, 500)
 
     @staticmethod
     def draw(boy):
@@ -103,6 +106,9 @@ class RunState:
             boy.velocity += RUN_SPEED_PPS
             boy.dir = 0
 
+        if event == PRESS_Z:
+            boy.act_attack()
+
     @staticmethod
     def exit(boy, event):
         pass
@@ -113,7 +119,7 @@ class RunState:
         boy.x += boy.velocity * game_framework.frame_time
         boy.x = clamp(25, boy.x, 800 - 25)
 
-        if boy.jump_timer_other > 0:                     # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
+        if boy.jump_timer_other > 0:  # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
             boy.y += 10
             boy.jump_timer_other -= 1
         elif boy.jump_timer_other <= 0:
@@ -123,8 +129,7 @@ class RunState:
         if boy.dash_timer != 0:
             boy.dash_timer -= 1
             boy.dash_timer = clamp(0, boy.dash_timer, 10)
-            print(boy.dash_timer)
-
+            boy.y = clamp(boy.y, boy.y, 500)
 
     @staticmethod
     def draw(boy):
@@ -155,11 +160,14 @@ class JumpState:
             boy.velocity += RUN_SPEED_PPS
             boy.dir = 0
 
+        if event == PRESS_Z:
+            boy.act_attack()
+
         boy.jump_timer = 10
 
     @staticmethod
     def exit(boy, event):
-        boy.jump_timer_other = boy.jump_timer               # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
+        boy.jump_timer_other = boy.jump_timer  # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
 
         boy.jump_timer = 10
 
@@ -179,8 +187,7 @@ class JumpState:
         if boy.dash_timer != 0:
             boy.dash_timer -= 1
             boy.dash_timer = clamp(0, boy.dash_timer, 10)
-            print(boy.dash_timer)
-
+            boy.y = clamp(boy.y, boy.y, 500)
 
     @staticmethod
     def draw(boy):
@@ -209,7 +216,6 @@ class AttackState:
     def do(boy):
         boy.frame = (boy.frame + FRAMES_PER_ATTACK * ACTION_PER_TIME * game_framework.frame_time) % 10
 
-
     @staticmethod
     def draw(boy):
         if boy.attack_count == 1:
@@ -229,17 +235,16 @@ class AttackState:
                 boy.image.clip_draw(int(boy.frame) * 32, 96, 32, 32, boy.x, boy.y, 100, 100)
 
 
-
 next_state_table = {
     IdleState: {RIGHT_UP: RunState, LEFT_UP: RunState,
                 RIGHT_DOWN: RunState, LEFT_DOWN: RunState,
-                PRESS_X: JumpState},                  # TIME_OUT: IdleState 추가해야 공격할 때 다른 버튼 연타해도 안 튕김
+                PRESS_X: JumpState, PRESS_Z: IdleState},  # TIME_OUT: IdleState 추가해야 공격할 때 다른 버튼 연타해도 안 튕김
     RunState: {RIGHT_UP: IdleState, LEFT_UP: IdleState,
                LEFT_DOWN: RunState, RIGHT_DOWN: RunState,
-               PRESS_X: JumpState},
+               PRESS_X: JumpState, PRESS_Z: RunState},
     JumpState: {RIGHT_UP: RunState, LEFT_UP: RunState,
                 LEFT_DOWN: RunState, RIGHT_DOWN: RunState,
-                PRESS_X: JumpState}
+                PRESS_X: JumpState, PRESS_Z: JumpState}
 }
 
 
@@ -256,6 +261,7 @@ class Boy:
         self.velocity = 0
         self.frame = 0
         self.HP = 100
+        self.STR = 10
         self.attack_count = 0
         self.event_que = []
         self.cur_state = IdleState
@@ -268,7 +274,8 @@ class Boy:
             return self.x - 25, self.y - 50, self.x + 35, self.y + 20
 
     def act_attack(self):
-        pass
+        Heat_Box = Heat_box()
+        game_world.add_object(Heat_Box, 1)
 
     def act_dash(self):
         if self.dir == 1:
@@ -282,6 +289,9 @@ class Boy:
 
         self.dash_timer += 10
         self.jump_timer = 0
+
+    def return_boy(self):
+        return self.x, self.y
 
     def update_state(self):
         if len(self.event_que) > 0:
@@ -302,8 +312,6 @@ class Boy:
             self.cur_state.enter(self, event)
 
         self.HP = clamp(0, self.HP, 100)
-        print(self.HP)
-
 
     def draw(self):
         self.cur_state.draw(self)
@@ -314,8 +322,8 @@ class Boy:
             key_event = key_event_table[(event.type, event.key)]
             self.add_event(key_event)
 
-    def damaged(self, damaged):
-        self.HP -= damaged
+    def damaged(self, damage):
+        self.HP -= damage
 
     def recovery(self, cure):
         self.HP += cure
