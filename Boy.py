@@ -65,12 +65,14 @@ class IdleState:
         boy.x += boy.velocity * game_framework.frame_time
         boy.x = clamp(25, boy.x, 800 - 25)
 
-        if boy.jump_timer_other > 0:  # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
-            boy.y += 10
-            boy.jump_timer_other -= 1
-        elif boy.jump_timer_other <= 0:
-            boy.y -= 10
+        if boy.jump_timer > 0:                      # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
+            boy.y += 20
+            boy.jump_timer -= 1
             boy.y = clamp(108, boy.y, 500)
+            boy.fall_speed = 0
+            boy.jumping = True
+        else:
+            boy.jumping = False
 
         if boy.dash_timer != 0:
             boy.dash_timer -= 1
@@ -119,12 +121,14 @@ class RunState:
         boy.x += boy.velocity * game_framework.frame_time
         boy.x = clamp(25, boy.x, 800 - 25)
 
-        if boy.jump_timer_other > 0:  # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
-            boy.y += 10
-            boy.jump_timer_other -= 1
-        elif boy.jump_timer_other <= 0:
-            boy.y -= 10
+        if boy.jump_timer > 0:                      # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
+            boy.y += 20
+            boy.jump_timer -= 1
             boy.y = clamp(108, boy.y, 500)
+            boy.fall_speed = 0
+            boy.jumping = True
+        else:
+            boy.jumping = False
 
         if boy.dash_timer != 0:
             boy.dash_timer -= 1
@@ -163,13 +167,15 @@ class JumpState:
         if event == PRESS_Z:
             boy.act_attack()
 
+        boy.y += 5                  #충돌로 인한 점프불가를 방지하기 위한 눈치못챌정도의 작은 점프
         boy.jump_timer = 10
 
     @staticmethod
     def exit(boy, event):
-        boy.jump_timer_other = boy.jump_timer  # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
+        #boy.jump_timer_other = boy.jump_timer  # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
 
-        boy.jump_timer = 10
+        boy.jump_timer = 0
+
 
     @staticmethod
     def do(boy):
@@ -178,11 +184,13 @@ class JumpState:
         boy.x = clamp(25, boy.x, 800 - 25)
 
         if boy.jump_timer > 0:
-            boy.y += 10
+            boy.y += 20
             boy.jump_timer -= 1
-        elif boy.jump_timer <= 0:
-            boy.y -= 10
             boy.y = clamp(108, boy.y, 500)
+            boy.fall_speed = 0
+            boy.jumping = True
+        else:
+            boy.jumping = False
 
         if boy.dash_timer != 0:
             boy.dash_timer -= 1
@@ -254,11 +262,13 @@ class Boy:
         self.image = load_image('Adventurer Sprite Sheet v1.1.png')
         self.image_dash = load_image('dash_effect.png')
         self.dir = 1
-        self.jump_timer = 10
+        self.jump_timer = 0
         self.jump_timer_other = 0
         self.stop_jump_while_dash = 0
         self.dash_timer = 0
         self.velocity = 0
+        self.fall_speed = 400
+        self.jumping = False
         self.frame = 0
         self.HP = 100
         self.STR = 10
@@ -272,6 +282,12 @@ class Boy:
             return self.x - 35, self.y - 50, self.x + 25, self.y + 20
         else:
             return self.x - 25, self.y - 50, self.x + 35, self.y + 20
+
+    def get_flatform_bb(self):
+        if self.dir == 1:
+            return self.x - 35, self.y - 50, self.x + 25, self.y - 40
+        else:
+            return self.x - 25, self.y - 50, self.x + 35, self.y - 40
 
     def act_attack(self):
         Heat_Box = Heat_box()
@@ -311,11 +327,18 @@ class Boy:
             self.cur_state = next_state_table[self.cur_state][event]
             self.cur_state.enter(self, event)
 
+        if self.jumping:                            #상태의 do에 있는 fall_speed 값 조정과의 충돌을 피하기 위함
+            pass
+        else:
+            self.fall_speed = 400
+
         self.HP = clamp(0, self.HP, 100)
+
 
     def draw(self):
         self.cur_state.draw(self)
         draw_rectangle(*self.get_bb())
+        draw_rectangle(*self.get_flatform_bb())
 
     def handle_event(self, event):
         if (event.type, event.key) in key_event_table:
@@ -327,3 +350,6 @@ class Boy:
 
     def recovery(self, cure):
         self.HP += cure
+
+    def stop(self):
+        self.fall_speed = 0

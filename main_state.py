@@ -12,6 +12,7 @@ import pause_state
 from Boy import Boy
 from hp_bar import HP_BAR
 from ground import Ground
+from flatform import Flatform
 from back_ground import Background
 from spike import Spike
 from monster_bear import Monster_bear
@@ -23,6 +24,7 @@ name = "MainState"
 
 boy = None
 ground = None
+FlatForm = None
 background = None
 Hp_Bar = None
 Monster_Bear = None
@@ -43,11 +45,12 @@ def get_Monster_Mage():
 
 
 def enter():
-    global boy, ground, background, spike, Hp_Bar, Monster_Bear, Monster_Mage, Health_Item
+    global boy, ground, FlatForm, background, spike, Hp_Bar, Monster_Bear, Monster_Mage, Health_Item
 
     boy = Boy()
     Hp_Bar = HP_BAR()
     ground = Ground()
+    FlatForm = Flatform()
     background = Background()
     Monster_Bear = Monster_bear()
     Monster_Mage = Monster_mage()
@@ -56,6 +59,7 @@ def enter():
 
     game_world.add_object(background, 0)
     game_world.add_object(ground, 0)
+    game_world.add_object(FlatForm, 1)
     game_world.add_object(boy, 1)
     game_world.add_object(Monster_Bear, 1)
     game_world.add_object(Monster_Mage, 1)
@@ -108,6 +112,17 @@ def collide(a, b):
 
     return True
 
+def collide_flatform(a, b):
+    left_a, bottom_a, right_a, top_a = a.get_flatform_bb()
+    left_b, bottom_b, right_b, top_b = b.get_bb()
+
+    if left_a > right_b: return False
+    if right_a < left_b: return False
+    if top_a < bottom_b: return False
+    if bottom_a > top_b: return False
+
+    return True
+
 
 def update():
     for game_object in game_world.all_objects():
@@ -125,6 +140,13 @@ def update():
         game_world.remove_object(Health_Item)
         Health_Item.y -= 100
 
+    if collide(boy, ground):
+        boy.stop()
+
+    if collide_flatform(boy, FlatForm):
+        boy.stop()
+
+    boy.y -= boy.fall_speed * game_framework.frame_time
     Hp_Bar.update(boy.HP)
 
 
