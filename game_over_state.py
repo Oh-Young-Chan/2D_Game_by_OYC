@@ -2,13 +2,16 @@ from pico2d import *
 import game_framework
 import title_state
 
+width = 1280 // 2
+height = 720 // 2
+
 name = 'GameOverState'
 image = None
 
 
 def enter():
     global image
-    image = load_image('Game Over Screen.png')
+    image = load_image('image\Game Over Screen.png')
 
 
 def exit():
@@ -18,8 +21,9 @@ def exit():
 
 def draw():
     global image
+    global width, height
     clear_canvas()
-    image.draw(400, 300)
+    image.draw(width, height)
     update_canvas()
 
 

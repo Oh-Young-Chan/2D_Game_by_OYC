@@ -8,7 +8,7 @@ image = None
 
 def enter():
     global image
-    image = load_image('Pause Screen.png')
+    image = load_image('image\Pause Screen.png')
 
 
 def exit():

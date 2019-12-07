@@ -3,9 +3,14 @@ import game_framework
 import game_world
 import game_over_state
 import pause_state
+import main_state
 
 from hp_bar import HP_BAR
 from heat_box import Heat_box
+from ground import Ground
+
+width = 1280 // 2
+height = 720 // 2
 
 PIXEL_PER_METER = (10.0 / 0.3)
 RUN_SPEED_KMPH = 20.0
@@ -61,9 +66,11 @@ class IdleState:
 
     @staticmethod
     def do(boy):
+        global width, height
+
         boy.frame = (boy.frame + FRAMES_PER_IDLE * ACTION_PER_TIME * game_framework.frame_time * 0.2) % 13
         boy.x += boy.velocity * game_framework.frame_time
-        boy.x = clamp(25, boy.x, 800 - 25)
+        boy.x = clamp(25, boy.x, 1280 - 25)
 
         if boy.jump_timer > 0:                      # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
             boy.y += 20
@@ -117,9 +124,11 @@ class RunState:
 
     @staticmethod
     def do(boy):
+        global width, height
+
         boy.frame = (boy.frame + FRAMES_PER_RUN * ACTION_PER_TIME * game_framework.frame_time) % 8
         boy.x += boy.velocity * game_framework.frame_time
-        boy.x = clamp(25, boy.x, 800 - 25)
+        boy.x = clamp(25, boy.x, 1280 - 25)
 
         if boy.jump_timer > 0:                      # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
             boy.y += 20
@@ -179,9 +188,11 @@ class JumpState:
 
     @staticmethod
     def do(boy):
+        global width, height
+
         boy.frame = (boy.frame + FRAMES_PER_RUN * ACTION_PER_TIME * game_framework.frame_time) % 8
         boy.x += boy.velocity * game_framework.frame_time
-        boy.x = clamp(25, boy.x, 800 - 25)
+        boy.x = clamp(25, boy.x, 1280 - 25)
 
         if boy.jump_timer > 0:
             boy.y += 20
@@ -256,11 +267,23 @@ next_state_table = {
 }
 
 
+def collide(a, b):
+    left_a, bottom_a, right_a, top_a = a.get_bb()
+    left_b, bottom_b, right_b, top_b = b.get_bb()
+
+    if left_a > right_b: return False
+    if right_a < left_b: return False
+    if top_a < bottom_b: return False
+    if bottom_a > top_b: return False
+
+    return True
+
+
 class Boy:
     def __init__(self):
-        self.x, self.y = 400, 108
-        self.image = load_image('Adventurer Sprite Sheet v1.1.png')
-        self.image_dash = load_image('dash_effect.png')
+        self.x, self.y = 64*6, 64*2+48                                      # 48 = 플레이어 높이 // 2(?)
+        self.image = load_image('image\Adventurer Sprite Sheet v1.1.png')
+        self.image_dash = load_image('image\dash_effect.png')
         self.dir = 1
         self.jump_timer = 0
         self.jump_timer_other = 0
@@ -273,6 +296,11 @@ class Boy:
         self.HP = 100
         self.STR = 10
         self.attack_count = 0
+        self.ground = Ground()
+        self.chicken = None
+        self.inCure = False
+        self.itemList = [[], [], []]                 # Item
+        self.magicList = [[], [], []]                # Magic
         self.event_que = []
         self.cur_state = IdleState
         self.cur_state.enter(self, None)
@@ -288,6 +316,34 @@ class Boy:
             return self.x - 35, self.y - 50, self.x + 25, self.y - 40
         else:
             return self.x - 25, self.y - 50, self.x + 35, self.y - 40
+
+
+    def eatChicken(self):
+        if len(self.itemList[0]) <= 0 or self.HP >= 100:
+            pass
+        else:
+            self.itemList[0].pop(-1)
+            self.recovery(50)
+
+    def infinityCure(self):
+        num = 1000
+        if self.inCure:
+            while num > 0:
+                self.dotRecovery(1)
+                num -= 1
+                print('heal!')
+                if self.inCure:
+                    pass
+                else:
+                    print('break')
+                    break
+
+    def openCure(self):
+        self.inCure = True
+
+    def closeCure(self):
+        self.inCure = False
+
 
     def act_attack(self):
         Heat_Box = Heat_box()
@@ -332,6 +388,12 @@ class Boy:
         else:
             self.fall_speed = 400
 
+        if collide(self, self.ground):
+            self.stop()
+
+        self.inficovery()
+
+        self.y -= self.fall_speed * game_framework.frame_time
         self.HP = clamp(0, self.HP, 100)
 
 
@@ -350,6 +412,14 @@ class Boy:
 
     def recovery(self, cure):
         self.HP += cure
+
+    def dotRecovery(self, cure):
+        self.HP += cure * game_framework.frame_time * 0.05
+
+    def inficovery(self):
+        if game_framework.frame_count % 2 == 0:
+            print(game_framework.frame_count)
+            self.infinityCure()
 
     def stop(self):
         self.fall_speed = 0

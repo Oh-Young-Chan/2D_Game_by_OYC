@@ -17,7 +17,7 @@ from back_ground import Background
 from spike import Spike
 from monster_bear import Monster_bear
 from monster_mage import Monster_mage
-from health_item import Health_item
+from chest import Chest
 from heat_box import Heat_box
 
 name = "MainState"
@@ -29,13 +29,19 @@ background = None
 Hp_Bar = None
 Monster_Bear = None
 Monster_Mage = None
-Health_Item = None
+CHest = None
 spike = None
 font = None
 
 
 def get_boy():
     return boy
+
+def get_ground():
+    return ground
+
+def get_chest():
+    return CHest
 
 def get_Monster_Bear():
     return Monster_Bear
@@ -45,7 +51,7 @@ def get_Monster_Mage():
 
 
 def enter():
-    global boy, ground, FlatForm, background, spike, Hp_Bar, Monster_Bear, Monster_Mage, Health_Item
+    global boy, ground, FlatForm, background, spike, Hp_Bar, Monster_Bear, Monster_Mage, CHest, CHicken
 
     boy = Boy()
     Hp_Bar = HP_BAR()
@@ -55,17 +61,19 @@ def enter():
     Monster_Bear = Monster_bear()
     Monster_Mage = Monster_mage()
     spike = Spike()
-    Health_Item = Health_item()
+    CHest = Chest()
 
     game_world.add_object(background, 0)
     game_world.add_object(ground, 0)
     game_world.add_object(FlatForm, 1)
-    game_world.add_object(boy, 1)
+    game_world.add_object(boy, 2)
     game_world.add_object(Monster_Bear, 1)
     game_world.add_object(Monster_Mage, 1)
     game_world.add_object(spike, 1)
-    game_world.add_object(Health_Item, 1)
+    game_world.add_object(CHest, 1)
 
+def get_ground():
+    return ground
 
 def exit():
     global Hp_Bar
@@ -95,8 +103,19 @@ def handle_events():
             boy.act_attack()
         elif event.type == SDL_KEYDOWN and event.key == SDLK_c:
             boy.act_dash()
+        elif event.type == SDL_KEYDOWN and event.key == SDLK_q:
+            boy.eatChicken()
         else:
             boy.handle_event(event)
+
+        if event.type == SDL_KEYDOWN and event.key == SDLK_w:
+            boy.openCure()
+        elif event.type == SDL_KEYUP and event.key == SDLK_w:
+            boy.closeCure()
+
+        if collide(boy, CHest):
+            if event.type == SDL_KEYDOWN and event.key == SDLK_UP:
+                CHest.open()
     if boy.HP <= 0:
         game_framework.change_state(game_over_state)
 
@@ -135,18 +154,9 @@ def update():
     if collide(boy, spike):
         boy.damaged(5)
 
-    if collide(boy, Health_Item):
-        boy.recovery(50)
-        game_world.remove_object(Health_Item)
-        Health_Item.y -= 100
-
-    if collide(boy, ground):
-        boy.stop()
-
     if collide_flatform(boy, FlatForm):
         boy.stop()
 
-    boy.y -= boy.fall_speed * game_framework.frame_time
     Hp_Bar.update(boy.HP)
 
 

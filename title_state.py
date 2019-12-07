@@ -2,13 +2,16 @@ from pico2d import *
 import game_framework
 import main_state
 
+width = 1280 // 2
+height = 720 // 2
+
 name = 'TitleState'
 image = None
 
 
 def enter():
     global image
-    image = load_image('Title Screen.png')
+    image = load_image('image\Title Screen.png')
 
 
 def exit():
@@ -30,7 +33,7 @@ def handle_events():
 
 def draw():
     clear_canvas()
-    image.draw(400, 300)
+    image.draw(width, height)
     update_canvas()
 
 

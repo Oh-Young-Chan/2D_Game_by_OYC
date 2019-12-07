@@ -2,6 +2,9 @@ from pico2d import *
 import game_framework
 import title_state
 
+width = 1280 // 2
+height = 720 // 2
+
 name = 'StartState'
 image = None
 logo_time = 0.0
@@ -9,7 +12,7 @@ logo_time = 0.0
 
 def enter():
     global image
-    image = load_image('kpu_credit.png')
+    image = load_image('image\kpu_credit.png')
 
 
 def exit():
@@ -29,8 +32,9 @@ def update():
 
 def draw():
     global image
+    global width, height
     clear_canvas()
-    image.draw(400, 300)
+    image.draw(width, height)
     update_canvas()
 
 

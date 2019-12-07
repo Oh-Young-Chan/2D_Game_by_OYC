@@ -1,5 +1,6 @@
 import time
 frame_time = 0.0
+frame_count = 0
 
 class GameState:
     def __init__(self, state):
@@ -91,6 +92,7 @@ def run(start_state):
     stack = [start_state]
     start_state.enter()
     global frame_time
+    global frame_count
     current_time = time.time()
     while (running):
         stack[-1].handle_events()
@@ -99,6 +101,8 @@ def run(start_state):
         frame_time = time.time() - current_time
         frame_rate = 1.0 / frame_time
         current_time += frame_time
+        frame_count += 1
+        frame_count = frame_count%100
     # repeatedly delete the top of the stack
     while (len(stack) > 0):
         stack[-1].exit()
@@ -106,7 +110,7 @@ def run(start_state):
 
 
 def test_game_framework():
-    start_state = TestGameState('StartState')
+    start_state = TestGameState('image\StartState')
     run(start_state)
 
 
