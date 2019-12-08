@@ -6,8 +6,10 @@ TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 8
 
-from chicken import Chicken
+from potion import Potion
 from coin import Coin
+from lightning_book import Lightning_Book
+from fire_book import Fire_Book
 
 class Chest:
     def __init__(self):
@@ -16,7 +18,10 @@ class Chest:
         self.frame = 0
         self.openning = False
         self.openCount = 1
-        self.itemList = [Chicken(self.x, self.y), Chicken(self.x, self.y+320), Chicken(self.x, self.y+640), Coin(self.x+30, self.y+30)]
+        #self.itemList = [Potion(self.x, self.y), Potion(self.x, self.y+320), Fire_Book(self.x, self.y),
+         #                Coin(self.x+30, self.y+30), Lightning_Book(self.x, self.y)]
+        self.itemList = [Potion(self.x, self.y), Fire_Book(self.x, self.y), Lightning_Book(self.x, self.y),
+                         Coin(self.x, self.y),Coin(self.x, self.y),Coin(self.x, self.y),Coin(self.x, self.y),]
 
     def update(self):
         if self.openning:

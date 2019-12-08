@@ -19,6 +19,7 @@ from monster_bear import Monster_bear
 from monster_mage import Monster_mage
 from chest import Chest
 from heat_box import Heat_box
+from gui import Gui
 
 name = "MainState"
 
@@ -27,11 +28,12 @@ ground = None
 FlatForm = None
 background = None
 Hp_Bar = None
-Monster_Bear = None
-Monster_Mage = None
+Monster_Bear_List = []
+Monster_Mage_List = []
 CHest = None
 spike = None
 font = None
+GUI = None
 
 
 def get_boy():
@@ -43,34 +45,38 @@ def get_ground():
 def get_chest():
     return CHest
 
-def get_Monster_Bear():
-    return Monster_Bear
+def get_Monster_Bear_List():
+    return Monster_Bear_List
 
-def get_Monster_Mage():
-    return Monster_Mage
+def get_Monster_Mage_List():
+    return Monster_Mage_List
 
 
 def enter():
-    global boy, ground, FlatForm, background, spike, Hp_Bar, Monster_Bear, Monster_Mage, CHest, CHicken
+    global boy, ground, FlatForm, background, spike, Hp_Bar, Monster_Bear_List, Monster_Mage_List, CHest, CHicken, GUI
 
     boy = Boy()
     Hp_Bar = HP_BAR()
     ground = Ground()
     FlatForm = Flatform()
     background = Background()
-    Monster_Bear = Monster_bear()
-    Monster_Mage = Monster_mage()
+    Monster_Bear_List = [Monster_bear(i) for i in range(5)]
+    Monster_Mage_List = [Monster_mage(i) for i in range(3)]
     spike = Spike()
     CHest = Chest()
+    GUI = Gui()
 
     game_world.add_object(background, 0)
     game_world.add_object(ground, 0)
     game_world.add_object(FlatForm, 1)
     game_world.add_object(boy, 2)
-    game_world.add_object(Monster_Bear, 1)
-    game_world.add_object(Monster_Mage, 1)
+    for i in range(len(Monster_Bear_List)):
+        game_world.add_object(Monster_Bear_List[i], 1)
+    for i in range(len(Monster_Mage_List)):
+        game_world.add_object(Monster_Mage_List[i], 1)
     game_world.add_object(spike, 1)
     game_world.add_object(CHest, 1)
+    game_world.add_object(GUI, 1)
 
 def get_ground():
     return ground
@@ -99,18 +105,23 @@ def handle_events():
             game_framework.quit()
         elif event.type == SDL_KEYDOWN and event.key == SDLK_p:
             game_framework.push_state(pause_state)
-        elif event.type == SDL_KEYDOWN and event.key == SDLK_z:
-            boy.act_attack()
         elif event.type == SDL_KEYDOWN and event.key == SDLK_c:
             boy.act_dash()
         elif event.type == SDL_KEYDOWN and event.key == SDLK_q:
-            boy.eatChicken()
+            boy.drinkPotion()
+        elif event.type == SDL_KEYDOWN and event.key == SDLK_a:
+            boy.spellLight()
         else:
             boy.handle_event(event)
 
-        if event.type == SDL_KEYDOWN and event.key == SDLK_w:
+        if event.type == SDL_KEYDOWN and event.key == SDLK_s:
+            boy.spellOnFire()
+        elif event.type == SDL_KEYUP and event.key == SDLK_s:
+            boy.spellOffFire()
+
+        if event.type == SDL_KEYDOWN and event.key == SDLK_2:
             boy.openCure()
-        elif event.type == SDL_KEYUP and event.key == SDLK_w:
+        elif event.type == SDL_KEYUP and event.key == SDLK_2:
             boy.closeCure()
 
         if collide(boy, CHest):
@@ -147,10 +158,13 @@ def update():
     for game_object in game_world.all_objects():
         game_object.update()
 
-    if collide(boy, Monster_Mage):
-        boy.damaged(1)
-    if collide(boy, Monster_Bear):
-        boy.damaged(3)
+    for i in range(len(Monster_Mage_List)):
+        if collide(boy, Monster_Mage_List[i]):
+            boy.damaged(1)
+    for i in range(len(Monster_Bear_List)):
+        if collide(boy, Monster_Bear_List[i]):
+            boy.damaged(3)
+
     if collide(boy, spike):
         boy.damaged(5)
 

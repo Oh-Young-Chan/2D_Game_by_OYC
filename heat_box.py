@@ -20,26 +20,31 @@ class Heat_box:
     def __init__(self):
         boy = main_state.get_boy()
         self.x, self.y = boy.x + 30, boy.y
-        self.attack_time = 5
+        self.attack_time = 1
+        self.isFire = False
 
     def draw(self):
         draw_rectangle(*self.get_bb())
 
     def update(self):
-        Monster_Bear = main_state.get_Monster_Bear()
-        Monster_Mage = main_state.get_Monster_Mage()
+        Monster_Bear_List = main_state.get_Monster_Bear_List()
+        Monster_Mage_List = main_state.get_Monster_Mage_List()
         boy = main_state.get_boy()
 
         self.attack_time -= 1
-        self.attack_time = clamp(0, self.attack_time, 5)
-        if self.attack_time <= 0:
-            game_world.remove_object(self)
-            self.attack_time += 5
+        self.attack_time = clamp(0, self.attack_time, 1)
+        if self.attack_time == 0:
+            pass
+        else:
+            self.attack_time = 1
 
-        if collide(self, Monster_Bear):
-            Monster_Bear.damaged(boy.STR)
-        if collide(self, Monster_Mage):
-            Monster_Mage.damaged(boy.STR)
+        for i in range(len(Monster_Bear_List)):
+            if collide(self, Monster_Bear_List[i]):
+                game_world.remove_object(self)
+                Monster_Bear_List[i].damaged(boy.STR, self.isFire)
+        for i in range(len(Monster_Mage_List)):
+            if collide(self, Monster_Mage_List[i]):
+                Monster_Mage_List[i].damaged(boy.STR, self.isFire)
 
     def get_bb(self):
         boy = main_state.get_boy()

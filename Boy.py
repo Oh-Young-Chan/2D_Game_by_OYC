@@ -8,6 +8,8 @@ import main_state
 from hp_bar import HP_BAR
 from heat_box import Heat_box
 from ground import Ground
+from lightning import Lightning
+from fire import Fire
 
 width = 1280 // 2
 height = 720 // 2
@@ -25,11 +27,14 @@ DASH_SPEED_PPS = (DASH_SPEED_MPS * PIXEL_PER_METER)
 
 TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
-FRAMES_PER_IDLE = 13
-FRAMES_PER_RUN = 8
-FRAMES_PER_ATTACK = 10
+FRAMES_PER_IDLE = 4
+FRAMES_PER_RUN = 6
+FRAMES_PER_JUMP = 8
+FRAMES_PER_ATTACK = 4
+FRAMES_PER_HURT = 4
+FRAMES_PER_FIRE = 4
 
-RIGHT_DOWN, LEFT_DOWN, RIGHT_UP, LEFT_UP, PRESS_X, PRESS_Z = range(6)
+RIGHT_DOWN, LEFT_DOWN, RIGHT_UP, LEFT_UP, PRESS_X, PRESS_Z, END_ACT = range(7)
 
 key_event_table = {
     (SDL_KEYDOWN, SDLK_RIGHT): RIGHT_DOWN,
@@ -44,6 +49,7 @@ key_event_table = {
 class IdleState:
     @staticmethod
     def enter(boy, event):
+        print('velocity : %d', boy.velocity)
         if event == RIGHT_DOWN:
             boy.velocity += RUN_SPEED_PPS
             boy.dir = 1
@@ -57,8 +63,8 @@ class IdleState:
             boy.velocity += RUN_SPEED_PPS
             boy.dir = 0
 
-        if event == PRESS_Z:
-            boy.act_attack()
+        #if event == PRESS_Z:
+         #   boy.act_attack()
 
     @staticmethod
     def exit(boy, event):
@@ -68,11 +74,11 @@ class IdleState:
     def do(boy):
         global width, height
 
-        boy.frame = (boy.frame + FRAMES_PER_IDLE * ACTION_PER_TIME * game_framework.frame_time * 0.2) % 13
+        boy.frame = (boy.frame + FRAMES_PER_IDLE * ACTION_PER_TIME * game_framework.frame_time) % 4
         boy.x += boy.velocity * game_framework.frame_time
         boy.x = clamp(25, boy.x, 1280 - 25)
 
-        if boy.jump_timer > 0:                      # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
+        if boy.jump_timer > 0:  # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
             boy.y += 20
             boy.jump_timer -= 1
             boy.y = clamp(108, boy.y, 500)
@@ -89,14 +95,14 @@ class IdleState:
     @staticmethod
     def draw(boy):
         if boy.dir == 1:
-            boy.image.clip_draw(int(boy.frame) * 32, 480, 32, 32, boy.x, boy.y, 100, 100)
+            boy.image.clip_draw(int(boy.frame) * 32, 0, 32, 32, boy.x, boy.y, 64, 64)
         else:
-            boy.image.clip_draw(int(boy.frame) * 32, 224, 32, 32, boy.x, boy.y, 100, 100)
+            boy.image.clip_composite_draw(int(boy.frame) * 32, 0, 32, 32, 0, 'h', boy.x, boy.y, 64, 64)
         if boy.dash_timer != 0:
             if boy.dir == 1:
-                boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, '', boy.x - 60, boy.y - 15, 100, 30)
+                boy.image_dash.clip_composite_draw(0, 0, 32, 32, 0, '', boy.x - 60, boy.y - 15, 100, 30)
             else:
-                boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, 'v', boy.x + 60, boy.y - 15, 100, 30)
+                boy.image_dash.clip_composite_draw(0, 0, 32, 32, 0, 'v', boy.x + 60, boy.y - 15, 100, 30)
 
 
 class RunState:
@@ -109,14 +115,20 @@ class RunState:
             boy.velocity -= RUN_SPEED_PPS
             boy.dir = 0
         elif event == RIGHT_UP:
-            boy.velocity -= RUN_SPEED_PPS
+            if boy.velocity == 0:
+                pass
+            else:
+                boy.velocity -= RUN_SPEED_PPS
             boy.dir = 1
         elif event == LEFT_UP:
-            boy.velocity += RUN_SPEED_PPS
+            if boy.velocity == 0:
+                pass
+            else:
+                boy.velocity += RUN_SPEED_PPS
             boy.dir = 0
 
-        if event == PRESS_Z:
-            boy.act_attack()
+        #if event == PRESS_Z:
+         #   boy.act_attack()
 
     @staticmethod
     def exit(boy, event):
@@ -126,11 +138,11 @@ class RunState:
     def do(boy):
         global width, height
 
-        boy.frame = (boy.frame + FRAMES_PER_RUN * ACTION_PER_TIME * game_framework.frame_time) % 8
+        boy.frame = (boy.frame + FRAMES_PER_RUN * ACTION_PER_TIME * game_framework.frame_time) % 6
         boy.x += boy.velocity * game_framework.frame_time
         boy.x = clamp(25, boy.x, 1280 - 25)
 
-        if boy.jump_timer > 0:                      # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
+        if boy.jump_timer > 0:  # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
             boy.y += 20
             boy.jump_timer -= 1
             boy.y = clamp(108, boy.y, 500)
@@ -147,9 +159,9 @@ class RunState:
     @staticmethod
     def draw(boy):
         if boy.dir == 1:
-            boy.image.clip_draw(int(boy.frame) * 32, 448, 32, 32, boy.x, boy.y, 100, 100)
+            boy.runImage.clip_draw(int(boy.frame) * 32, 0, 32, 32, boy.x, boy.y, 64, 64)
         else:
-            boy.image.clip_draw(int(boy.frame) * 32, 192, 32, 32, boy.x, boy.y, 100, 100)
+            boy.runImage.clip_composite_draw(int(boy.frame) * 32, 0, 32, 32, 0, 'h', boy.x, boy.y, 64, 64)
         if boy.dash_timer != 0:
             if boy.dir == 1:
                 boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, '', boy.x - 60, boy.y - 15, 100, 30)
@@ -173,24 +185,23 @@ class JumpState:
             boy.velocity += RUN_SPEED_PPS
             boy.dir = 0
 
-        if event == PRESS_Z:
-            boy.act_attack()
+        #if event == PRESS_Z:
+         #   boy.act_attack()
 
-        boy.y += 5                  #충돌로 인한 점프불가를 방지하기 위한 눈치못챌정도의 작은 점프
+        boy.y += 5  # 충돌로 인한 점프불가를 방지하기 위한 눈치못챌정도의 작은 점프
         boy.jump_timer = 10
 
     @staticmethod
     def exit(boy, event):
-        #boy.jump_timer_other = boy.jump_timer  # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
+        # boy.jump_timer_other = boy.jump_timer  # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
 
         boy.jump_timer = 0
-
 
     @staticmethod
     def do(boy):
         global width, height
 
-        boy.frame = (boy.frame + FRAMES_PER_RUN * ACTION_PER_TIME * game_framework.frame_time) % 8
+        boy.frame = (boy.frame + FRAMES_PER_JUMP * ACTION_PER_TIME * game_framework.frame_time) % 8
         boy.x += boy.velocity * game_framework.frame_time
         boy.x = clamp(25, boy.x, 1280 - 25)
 
@@ -211,9 +222,9 @@ class JumpState:
     @staticmethod
     def draw(boy):
         if boy.dir == 1:
-            boy.image.clip_draw(int(boy.frame) * 32, 448, 32, 32, boy.x, boy.y, 100, 100)
+            boy.jumpImage.clip_draw(int(boy.frame) * 32, 0, 32, 32, boy.x, boy.y, 64, 64)
         else:
-            boy.image.clip_draw(int(boy.frame) * 32, 192, 32, 32, boy.x, boy.y, 100, 100)
+            boy.jumpImage.clip_composite_draw(int(boy.frame) * 32, 0, 32, 32, 0, 'h', boy.x, boy.y, 64, 64)
         if boy.dash_timer != 0:
             if boy.dir == 1:
                 boy.image_dash.clip_composite_draw(0, 0, 415, 81, 0, '', boy.x - 60, boy.y - 15, 100, 30)
@@ -224,46 +235,49 @@ class JumpState:
 class AttackState:
     @staticmethod
     def enter(boy, event):
-        boy.attack_count += 1
+        print('AttackState')
 
     @staticmethod
     def exit(boy, event):
-        if boy.attack_count >= 3:
-            boy.attack_count = 0
+        boy.attackFrame = 0
+        boy.velocity = 0
+        print('End')
 
     @staticmethod
     def do(boy):
-        boy.frame = (boy.frame + FRAMES_PER_ATTACK * ACTION_PER_TIME * game_framework.frame_time) % 10
+        boy.attackFrame = (boy.attackFrame + FRAMES_PER_ATTACK * ACTION_PER_TIME * game_framework.frame_time) % (4+1)
+        if boy.attackFrame >= 4:
+            boy.add_event(END_ACT)
+        elif boy.attackFrame >= 2:
+            boy.act_attack()
+        else:
+            pass
 
     @staticmethod
     def draw(boy):
-        if boy.attack_count == 1:
-            if boy.dir == 1:
-                boy.image.clip_draw(int(boy.frame) * 32, 416, 32, 32, boy.x, boy.y, 100, 100)
-            else:
-                boy.image.clip_draw(int(boy.frame) * 32, 160, 32, 32, boy.x, boy.y, 100, 100)
-        elif boy.attack_count == 2:
-            if boy.dir == 1:
-                boy.image.clip_draw(int(boy.frame) * 32, 384, 32, 32, boy.x, boy.y, 100, 100)
-            else:
-                boy.image.clip_draw(int(boy.frame) * 32, 128, 32, 32, boy.x, boy.y, 100, 100)
+        if boy.dir == 1:
+            boy.attackImage.clip_draw(32*int(boy.attackFrame), 0, 32, 32, boy.x, boy.y, 64, 64)
         else:
-            if boy.dir == 1:
-                boy.image.clip_draw(int(boy.frame) * 32, 352, 32, 32, boy.x, boy.y, 100, 100)
-            else:
-                boy.image.clip_draw(int(boy.frame) * 32, 96, 32, 32, boy.x, boy.y, 100, 100)
+            boy.attackImage.clip_composite_draw(32*int(boy.attackFrame), 0, 32, 32, 0, 'h', boy.x, boy.y, 64, 64)
 
 
 next_state_table = {
     IdleState: {RIGHT_UP: RunState, LEFT_UP: RunState,
                 RIGHT_DOWN: RunState, LEFT_DOWN: RunState,
-                PRESS_X: JumpState, PRESS_Z: IdleState},  # TIME_OUT: IdleState 추가해야 공격할 때 다른 버튼 연타해도 안 튕김
+                PRESS_X: JumpState, PRESS_Z: AttackState,
+                END_ACT: IdleState},  # TIME_OUT: IdleState 추가해야 공격할 때 다른 버튼 연타해도 안 튕김
     RunState: {RIGHT_UP: IdleState, LEFT_UP: IdleState,
                LEFT_DOWN: RunState, RIGHT_DOWN: RunState,
-               PRESS_X: JumpState, PRESS_Z: RunState},
+               PRESS_X: JumpState, PRESS_Z: AttackState,
+               END_ACT: IdleState},
     JumpState: {RIGHT_UP: RunState, LEFT_UP: RunState,
                 LEFT_DOWN: RunState, RIGHT_DOWN: RunState,
-                PRESS_X: JumpState, PRESS_Z: JumpState}
+                PRESS_X: JumpState, PRESS_Z: JumpState,
+                END_ACT: IdleState},
+    AttackState: {RIGHT_UP: IdleState, LEFT_UP: IdleState,
+                  LEFT_DOWN: RunState, RIGHT_DOWN: RunState,
+                  PRESS_X: JumpState, PRESS_Z: AttackState,
+                  END_ACT: IdleState}
 }
 
 
@@ -281,9 +295,13 @@ def collide(a, b):
 
 class Boy:
     def __init__(self):
-        self.x, self.y = 64*6, 64*2+48                                      # 48 = 플레이어 높이 // 2(?)
-        self.image = load_image('image\Adventurer Sprite Sheet v1.1.png')
+        self.x, self.y = 64 * 6, 64 * 2 + 32  # 32 = 플레이어 높이 // 2
+        self.image = load_image('image\Player\Idle.png')
+        self.runImage = load_image('image\Player\Run.png')
+        self.jumpImage = load_image('image\Player\Jump.png')
+        self.attackImage = load_image('image\Player\Attack.png')
         self.image_dash = load_image('image\dash_effect.png')
+        self.hurtImage = load_image('image\Player\Hurt.png')
         self.dir = 1
         self.jump_timer = 0
         self.jump_timer_other = 0
@@ -293,23 +311,36 @@ class Boy:
         self.fall_speed = 400
         self.jumping = False
         self.frame = 0
+        self.attackFrame = 0
+        self.hurtFrame = 0
+        self.hurting = False
+        self.invincibilityTime = 10
         self.HP = 100
-        self.STR = 10
+        self.STR = 30
+        self.INT = 50
         self.attack_count = 0
+        self.coinCount = 0
         self.ground = Ground()
         self.chicken = None
         self.inCure = False
-        self.itemList = [[], [], []]                 # Item
-        self.magicList = [[], [], []]                # Magic
+        self.onFire = False
+        self.potionHealthy = 40
+        self.itemList = [[], [], []]  # Item
+        self.magicList = [[], [], []]  # Magic
+        self.fireSpellCount = 0
+        self.light = None
+        self.fire = None
         self.event_que = []
         self.cur_state = IdleState
         self.cur_state.enter(self, None)
 
+
+
     def get_bb(self):
         if self.dir == 1:
-            return self.x - 35, self.y - 50, self.x + 25, self.y + 20
+            return self.x - 20, self.y - 32, self.x + 18, self.y + 24
         else:
-            return self.x - 25, self.y - 50, self.x + 35, self.y + 20
+            return self.x - 20, self.y - 32, self.x + 18, self.y + 24
 
     def get_flatform_bb(self):
         if self.dir == 1:
@@ -317,13 +348,30 @@ class Boy:
         else:
             return self.x - 25, self.y - 50, self.x + 35, self.y - 40
 
-
-    def eatChicken(self):
+    def drinkPotion(self):
         if len(self.itemList[0]) <= 0 or self.HP >= 100:
             pass
         else:
             self.itemList[0].pop(-1)
-            self.recovery(50)
+            self.recovery(self.potionHealthy)
+
+    def spellLight(self):
+        if len(self.magicList[0]) <= 0:
+            pass
+        else:
+            self.magicList[0].pop(-1)
+            self.light = Lightning(self.x, self.y, self.dir)
+            game_world.add_object(self.light, 1)
+
+
+    def spellOnFire(self):
+        self.onFire = True
+        self.fire = Fire(self.x, self.y, self.dir)
+        game_world.add_object(self.fire, 1)
+
+    def spellOffFire(self):
+        self.onFire = False
+
 
     def infinityCure(self):
         num = 1000
@@ -343,7 +391,6 @@ class Boy:
 
     def closeCure(self):
         self.inCure = False
-
 
     def act_attack(self):
         Heat_Box = Heat_box()
@@ -375,15 +422,20 @@ class Boy:
     def add_event(self, event):
         self.event_que.insert(0, event)
 
+    def pop_event(self):
+        self.event_que.pop(-1)
+
     def update(self):
         self.cur_state.do(self)
-        if len(self.event_que) > 0:
+        if len(self.event_que) > 0 and (self.attackFrame == 0 or self.attackFrame >= 4):
             event = self.event_que.pop()
             self.cur_state.exit(self, event)
             self.cur_state = next_state_table[self.cur_state][event]
             self.cur_state.enter(self, event)
+        elif len(self.event_que) > 0:
+            self.event_que.pop()
 
-        if self.jumping:                            #상태의 do에 있는 fall_speed 값 조정과의 충돌을 피하기 위함
+        if self.jumping:  # 상태의 do에 있는 fall_speed 값 조정과의 충돌을 피하기 위함
             pass
         else:
             self.fall_speed = 400
@@ -396,9 +448,18 @@ class Boy:
         self.y -= self.fall_speed * game_framework.frame_time
         self.HP = clamp(0, self.HP, 100)
 
+        if self.hurting:
+            self.hurtFrame += (self.hurtFrame + FRAMES_PER_HURT * ACTION_PER_TIME * game_framework.frame_time) % (4+1)
+            if self.hurtFrame >= 4:
+                self.hurting = False
+                self.hurtFrame = 0
+
 
     def draw(self):
-        self.cur_state.draw(self)
+        if self.hurting:
+            self.hurtImage.clip_draw(32*int(self.hurtFrame), 0, 32, 32, self.x, self.y, 64, 64)
+        else:
+            self.cur_state.draw(self)
         draw_rectangle(*self.get_bb())
         draw_rectangle(*self.get_flatform_bb())
 
@@ -408,7 +469,13 @@ class Boy:
             self.add_event(key_event)
 
     def damaged(self, damage):
-        self.HP -= damage
+        self.hurting = True
+        if 0 < self.hurtFrame <= 3:
+            self.HP -= damage
+            if self.dir == 1:
+                self.x -= 500 * FRAMES_PER_HURT * ACTION_PER_TIME * game_framework.frame_time
+            else:
+                self.x += 500 * FRAMES_PER_HURT * ACTION_PER_TIME * game_framework.frame_time
 
     def recovery(self, cure):
         self.HP += cure
@@ -418,7 +485,6 @@ class Boy:
 
     def inficovery(self):
         if game_framework.frame_count % 2 == 0:
-            print(game_framework.frame_count)
             self.infinityCure()
 
     def stop(self):
