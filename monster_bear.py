@@ -5,6 +5,11 @@ import game_world
 import main_state
 import random
 
+from coin import Coin
+from potion import Potion
+from lightning_book import Lightning_Book
+from fire_book import Fire_Book
+
 TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 4
@@ -26,6 +31,8 @@ class Monster_bear:
         self.font = load_font('ConsolaMalgun.ttf', 16)
         self.writeDamage = 0
         self.hitCount = 0
+        self.dropItemCount = random.randrange(4)
+        self.dropItemSort = random.randrange(1, 10+1)
         self.image = load_image('image\Bear\Idle.png')
         self.hurtImage = load_image('image\Bear\Hurt.png')
         self.deathImage = load_image('image/Bear/Death.png')
@@ -44,10 +51,9 @@ class Monster_bear:
         else:
             self.hurtFrame = 0
         if self.HP <= 0:
-            self.deathFrame = (
-                                          self.deathFrame + FRAMES_PER_DEATH_ACTION * ACTION_PER_TIME * game_framework.frame_time) % (
-                                          6 + 1)
+            self.deathFrame = (self.deathFrame + FRAMES_PER_DEATH_ACTION * ACTION_PER_TIME * game_framework.frame_time) % (6+1)
             if self.deathFrame >= 6:
+                self.drop_item()
                 game_world.remove_object(self)
                 self.y -= 1000
 
@@ -103,3 +109,14 @@ class Monster_bear:
 
     def hurt(self):
         self.hurting = True
+
+    def drop_item(self):
+        for i in range(self.dropItemCount):
+            if 1 <= self.dropItemSort+i <= 5:
+                game_world.add_object(Coin(self.x, self.y), 2)
+            elif 6 <= self.dropItemSort+i <= 8:
+                game_world.add_object(Potion(self.x, self.y), 2)
+            elif self.dropItemSort+i == 9:
+                game_world.add_object(Lightning_Book(self.x, self.y), 2)
+            else:
+                game_world.add_object(Fire_Book(self.x, self.y), 2)

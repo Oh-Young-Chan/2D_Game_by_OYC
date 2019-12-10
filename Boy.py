@@ -34,7 +34,7 @@ FRAMES_PER_ATTACK = 4
 FRAMES_PER_HURT = 4
 FRAMES_PER_FIRE = 4
 
-RIGHT_DOWN, LEFT_DOWN, RIGHT_UP, LEFT_UP, PRESS_X, PRESS_Z, END_ACT = range(7)
+RIGHT_DOWN, LEFT_DOWN, RIGHT_UP, LEFT_UP, PRESS_X, PRESS_Z, END_ACT= range(7)
 
 key_event_table = {
     (SDL_KEYDOWN, SDLK_RIGHT): RIGHT_DOWN,
@@ -42,26 +42,33 @@ key_event_table = {
     (SDL_KEYUP, SDLK_RIGHT): RIGHT_UP,
     (SDL_KEYUP, SDLK_LEFT): LEFT_UP,
     (SDL_KEYDOWN, SDLK_x): PRESS_X,
-    (SDL_KEYDOWN, SDLK_z): PRESS_Z
+    (SDL_KEYDOWN, SDLK_z): PRESS_Z,
+    #(SDL_KEYDOWN, SDLK_UP): UP_DOWN,
+    #(SDL_KEYUP, SDLK_UP): UP_UP
 }
 
 
 class IdleState:
     @staticmethod
     def enter(boy, event):
-        print('velocity : %d', boy.velocity)
         if event == RIGHT_DOWN:
             boy.velocity += RUN_SPEED_PPS
             boy.dir = 1
         elif event == LEFT_DOWN:
             boy.velocity -= RUN_SPEED_PPS
             boy.dir = 0
+        #elif event == UP_DOWN:
+            #if boy.onLadder:
+                #boy.velocityOnY += RUN_SPEED_PPS
         elif event == RIGHT_UP:
             boy.velocity -= RUN_SPEED_PPS
             boy.dir = 1
         elif event == LEFT_UP:
             boy.velocity += RUN_SPEED_PPS
             boy.dir = 0
+        #elif event == UP_UP:
+            #if boy.onLadder:
+                #boy.velocityOnY -= RUN_SPEED_PPS
 
         #if event == PRESS_Z:
          #   boy.act_attack()
@@ -76,6 +83,7 @@ class IdleState:
 
         boy.frame = (boy.frame + FRAMES_PER_IDLE * ACTION_PER_TIME * game_framework.frame_time) % 4
         boy.x += boy.velocity * game_framework.frame_time
+        #boy.y += boy.velocityOnY * game_framework.frame_time
         boy.x = clamp(25, boy.x, 1280 - 25)
 
         if boy.jump_timer > 0:  # 공중에서 키보드 입력으로 Idle 상태로 바뀌어도 상승과 낙하를 유지해준다.
@@ -114,6 +122,9 @@ class RunState:
         elif event == LEFT_DOWN:
             boy.velocity -= RUN_SPEED_PPS
             boy.dir = 0
+        #elif event == UP_DOWN:
+            #if boy.onLadder:
+                #boy.velocityOnY += RUN_SPEED_PPS
         elif event == RIGHT_UP:
             if boy.velocity == 0:
                 pass
@@ -126,6 +137,9 @@ class RunState:
             else:
                 boy.velocity += RUN_SPEED_PPS
             boy.dir = 0
+        #elif event == UP_UP:
+            #if boy.onLadder:
+                #boy.velocityOnY -= RUN_SPEED_PPS
 
         #if event == PRESS_Z:
          #   boy.act_attack()
@@ -140,6 +154,7 @@ class RunState:
 
         boy.frame = (boy.frame + FRAMES_PER_RUN * ACTION_PER_TIME * game_framework.frame_time) % 6
         boy.x += boy.velocity * game_framework.frame_time
+        #boy.y += boy.velocityOnY * game_framework.frame_time
         boy.x = clamp(25, boy.x, 1280 - 25)
 
         if boy.jump_timer > 0:  # 공중에서 키보드 입력으로 Run 상태로 바뀌어도 상승과 낙하를 유지해준다.
@@ -308,6 +323,7 @@ class Boy:
         self.stop_jump_while_dash = 0
         self.dash_timer = 0
         self.velocity = 0
+        self.velocityOnY = 0
         self.fall_speed = 400
         self.jumping = False
         self.frame = 0
@@ -324,6 +340,8 @@ class Boy:
         self.chicken = None
         self.inCure = False
         self.onFire = False
+        self.onFlatform = False
+        self.onLadder = False
         self.potionHealthy = 40
         self.itemList = [[], [], []]  # Item
         self.magicList = [[], [], []]  # Magic
@@ -337,16 +355,10 @@ class Boy:
 
 
     def get_bb(self):
-        if self.dir == 1:
-            return self.x - 20, self.y - 32, self.x + 18, self.y + 24
-        else:
-            return self.x - 20, self.y - 32, self.x + 18, self.y + 24
+        return self.x - 20, self.y - 32, self.x + 18, self.y + 24
 
     def get_flatform_bb(self):
-        if self.dir == 1:
-            return self.x - 35, self.y - 50, self.x + 25, self.y - 40
-        else:
-            return self.x - 25, self.y - 50, self.x + 35, self.y - 40
+        return self.x - 20, self.y - 32, self.x + 18, self.y - 24
 
     def drinkPotion(self):
         if len(self.itemList[0]) <= 0 or self.HP >= 100:
@@ -438,7 +450,13 @@ class Boy:
         if self.jumping:  # 상태의 do에 있는 fall_speed 값 조정과의 충돌을 피하기 위함
             pass
         else:
-            self.fall_speed = 400
+            if self.onFlatform:
+                self.fall_speed = 0
+            else:
+                if self.onLadder:
+                    self.fall_speed = 0
+                else:
+                    self.fall_speed = 400
 
         if collide(self, self.ground):
             self.stop()
@@ -489,3 +507,13 @@ class Boy:
 
     def stop(self):
         self.fall_speed = 0
+
+    def flatform_stop(self):
+        self.onFlatform = True
+
+
+    def climb_ladder(self):
+        self.onLadder = True
+
+    def climb_no_ladder(self):
+        self.onLadder = False

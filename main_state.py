@@ -20,6 +20,8 @@ from monster_mage import Monster_mage
 from chest import Chest
 from heat_box import Heat_box
 from gui import Gui
+from flatform import Flatform
+from ladder import Ladder
 
 name = "MainState"
 
@@ -34,6 +36,8 @@ CHest = None
 spike = None
 font = None
 GUI = None
+FlatFormList = []
+LaDder = None
 
 
 def get_boy():
@@ -53,22 +57,23 @@ def get_Monster_Mage_List():
 
 
 def enter():
-    global boy, ground, FlatForm, background, spike, Hp_Bar, Monster_Bear_List, Monster_Mage_List, CHest, CHicken, GUI
+    global boy, ground, background, spike, Hp_Bar, Monster_Bear_List, Monster_Mage_List, CHest, CHicken,\
+        GUI, FlatFormList, LaDder
 
     boy = Boy()
     Hp_Bar = HP_BAR()
     ground = Ground()
-    FlatForm = Flatform()
     background = Background()
     Monster_Bear_List = [Monster_bear(i) for i in range(5)]
     Monster_Mage_List = [Monster_mage(i) for i in range(3)]
     spike = Spike()
     CHest = Chest()
     GUI = Gui()
+    FlatFormList = [Flatform(i) for i in range(len(Flatform.flatFormList))]
+    LaDder = Ladder(300, 64*2+16)
 
     game_world.add_object(background, 0)
     game_world.add_object(ground, 0)
-    game_world.add_object(FlatForm, 1)
     game_world.add_object(boy, 2)
     for i in range(len(Monster_Bear_List)):
         game_world.add_object(Monster_Bear_List[i], 1)
@@ -77,6 +82,9 @@ def enter():
     game_world.add_object(spike, 1)
     game_world.add_object(CHest, 1)
     game_world.add_object(GUI, 1)
+    for i in range(len(FlatFormList)):
+        game_world.add_object((FlatFormList[i]), 1)
+    game_world.add_object(LaDder, 1)
 
 def get_ground():
     return ground
@@ -124,6 +132,12 @@ def handle_events():
         elif event.type == SDL_KEYUP and event.key == SDLK_2:
             boy.closeCure()
 
+        if collide(boy, LaDder):
+            if event.type == SDL_KEYDOWN and event.key == SDLK_UP:
+                boy.climb_ladder()
+        else:
+            boy.onLadder = False
+
         if collide(boy, CHest):
             if event.type == SDL_KEYDOWN and event.key == SDLK_UP:
                 CHest.open()
@@ -165,11 +179,24 @@ def update():
         if collide(boy, Monster_Bear_List[i]):
             boy.damaged(3)
 
+# --------------------플랫폼 충돌---------------------------
+    if collide_flatform(boy, FlatFormList[0]):
+        boy.flatform_stop()
+    elif collide_flatform(boy, FlatFormList[1]):
+        boy.flatform_stop()
+    elif collide_flatform(boy, FlatFormList[2]):
+        boy.flatform_stop()
+    elif collide_flatform(boy, FlatFormList[3]):
+        boy.flatform_stop()
+    elif collide_flatform(boy, FlatFormList[4]):
+        boy.flatform_stop()
+    elif collide_flatform(boy, FlatFormList[5]):
+        boy.flatform_stop()
+    else:
+        boy.onFlatform = False
+
     if collide(boy, spike):
         boy.damaged(5)
-
-    if collide_flatform(boy, FlatForm):
-        boy.stop()
 
     Hp_Bar.update(boy.HP)
 
