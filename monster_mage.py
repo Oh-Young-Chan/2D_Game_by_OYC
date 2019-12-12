@@ -10,7 +10,7 @@ FRAMES_PER_ACTION = 8
 
 class Monster_mage:
     DamagedImage = None
-    posList = [64*2, 64*3, 64*4]
+    posList = []
 
     def __init__(self, i):
         self.x, self.y = self.posList[i], 64*2+45                          # 45 = Mage높이 // 2
@@ -57,5 +57,7 @@ class Monster_mage:
     def get_bb(self):
         return self.x - 55, self.y - 40, self.x + 35, self.y + 40
 
-    def damaged(self, damage):
+    def damaged(self, damage, fire):
         self.HP -= damage
+        if fire:
+            pass

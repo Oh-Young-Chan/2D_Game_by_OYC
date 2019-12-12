@@ -2,6 +2,7 @@
 # layer 0: Background Objects
 # layer 1: Foreground Objects
 objects = [[],[],[]]
+objects2 = [[],[],[]]
 
 
 def add_object(o, layer):
@@ -32,3 +33,7 @@ def all_objects():
         for o in objects[i]:
             yield o
 
+def all_objects2():
+    for i in range(len(objects2)):
+        for o in objects2[i]:
+            yield o

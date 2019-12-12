@@ -22,17 +22,20 @@ def collide(a, b):
 
 
 class Coin:
-    def __init__(self, chest_x, chest_y):
+    def __init__(self, chest_x, chest_y, bg):
+        self.bg = bg
         self.x, self.y = chest_x - 20, chest_y + 10  # 상자 오픈 시 치킨 생성 좌표 조정
         self.image = load_image('image\Item\Coin.png')
         self.frame = 0
         self.fall_speed = 100
         self.boy = main_state.get_boy()
         self.ground = main_state.get_ground()
+        self.flatform = main_state.get_flatform()
 
     def draw(self):
-        self.image.clip_draw(32*int(self.frame), 0, 32, 32, self.x, self.y, 48, 48)         # 24, 24 : 코인 크기
-        draw_rectangle(*self.get_bb())
+        cx, cy = self.x - self.bg.window_left, self.y - self.bg.window_bottom
+        self.image.clip_draw(32*int(self.frame), 0, 32, 32, cx, cy, 48, 48)         # 24, 24 : 코인 크기
+
 
     def stop(self):
         self.fall_speed = 0
@@ -40,10 +43,10 @@ class Coin:
     def update(self):
         self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
 
-        if collide(self, self.ground):
+        if collide(self, self.ground[0]) or collide(self, self.ground[1]) or collide(self, self.ground[4]) or collide(self, self.ground[6]): # 모든 땅에 작용하게 하기
             self.stop()
             if collide(self, self.boy):
-                self.pickUpEffect = pick_up_effect.Pick_up_effect(self.x, self.y)
+                self.pickUpEffect = pick_up_effect.Pick_up_effect(self.x, self.y, self.bg)
                 game_world.add_object(self.pickUpEffect, 2)
                 self.boy.coinCount += 1
                 game_world.remove_object(self)
@@ -52,4 +55,5 @@ class Coin:
         self.y -= self.fall_speed * game_framework.frame_time
 
     def get_bb(self):
-        return self.x - 12, self.y - 12, self.x + 12, self.y + 12
+        cx, cy = self.x - self.bg.window_left, self.y - self.bg.window_bottom
+        return cx - 12, cy - 12, cx + 12, cy + 12

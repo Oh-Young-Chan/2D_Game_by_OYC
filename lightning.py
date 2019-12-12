@@ -20,7 +20,8 @@ def collide(a, b):
 
 
 class Lightning:
-    def __init__(self, player_x, player_y, player_dir):
+    def __init__(self, player_x, player_y, player_dir, bg):
+        self.bg = bg
         self.x, self.y = player_x + 64, player_y
         self.dir = player_dir
         self.image = load_image('image\Magic\Lightning.png')
@@ -31,11 +32,12 @@ class Lightning:
         self.bearList = main_state.get_Monster_Bear_List()
 
     def draw(self):
+        cx, cy = self.x - self.bg.window_left, self.y - self.bg.window_bottom
         if self.dir == 1:
-            self.image.clip_draw(128*int(self.frame), 0, 128, 128, self.x, self.y)
+            self.image.clip_draw(128*int(self.frame), 0, 128, 128, cx, cy)
         else:
-            self.image.clip_composite_draw(128*int(self.frame), 0, 128, 128, 0, 'h', self.x-128, self.y, 128, 128)
-        draw_rectangle(*self.get_bb())
+            self.image.clip_composite_draw(128*int(self.frame), 0, 128, 128, 0, 'h', cx-128, cy, 128, 128)
+
 
     def update(self):
         self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % (12+1)
@@ -53,7 +55,8 @@ class Lightning:
                 game_world.remove_object(self)
 
     def get_bb(self):
+        cx, cy = self.x - self.bg.window_left, self.y - self.bg.window_bottom
         if self.dir == 1:
-            return self.x - 32, self.y - 12, self.x + 48, self.y + 12
+            return cx - 32, cy - 12, cx + 48, cy + 12
         else:
-            return self.x-128 - 48, self.y - 12, self.x-128 + 32, self.y + 12
+            return cx-128 - 48, cy - 12, cx-128 + 32, cy + 12

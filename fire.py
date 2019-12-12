@@ -2,11 +2,12 @@ from pico2d import *
 import game_framework
 import game_world
 import main_state
+import main_state_2
+import Boy
 
 TIME_PER_ACTION = 0.5
 ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
 FRAMES_PER_ACTION = 8
-
 
 def collide(a, b):
     left_a, bottom_a, right_a, top_a = a.get_bb()
@@ -23,7 +24,8 @@ def collide(a, b):
 class Fire:
     image = None
 
-    def __init__(self, player_x, player_y, player_dir):
+    def __init__(self, player_x, player_y, player_dir, bg):
+        self.bg = bg
         self.x, self.y = player_x + 64, player_y
         self.dir = player_dir
         if Fire.image == None:
@@ -35,11 +37,12 @@ class Fire:
         self.bearList = main_state.get_Monster_Bear_List()
 
     def draw(self):
+        cx, cy = self.x - self.bg.window_left, self.y - self.bg.window_bottom
         if self.dir == 1:
-            self.image.clip_draw(128 * int(self.frame), 0, 128, 128, self.x, self.y)
+            self.image.clip_draw(128 * int(self.frame), 0, 128, 128, cx, cy)
         else:
-            self.image.clip_composite_draw(128 * int(self.frame), 0, 128, 128, 0, 'h', self.x - 128, self.y, 128, 128)
-        draw_rectangle(*self.get_bb())
+            self.image.clip_composite_draw(128 * int(self.frame), 0, 128, 128, 0, 'h', cx - 128, cy, 128, 128)
+
 
     def update(self):
         if self.boy.onFire and self.boy.fireSpellCount > 0:
@@ -52,10 +55,11 @@ class Fire:
 
         for i in range(len(self.bearList)):
             if collide(self, self.bearList[i]):
-                self.bearList[i].damaged(self.boy.INT * 0.2, self.isFire)
+                self.bearList[i].damaged(self.boy.INT * 0.5, self.isFire)
 
     def get_bb(self):
+        cx, cy = self.x - self.bg.window_left, self.y - self.bg.window_bottom
         if self.dir == 1:
-            return self.x - 32, self.y - 12, self.x + 48, self.y + 12
+            return cx - 32, cy - 12, cx + 48, cy + 12
         else:
-            return self.x - 128 - 48, self.y - 12, self.x - 128 + 32, self.y + 12
+            return cx - 128 - 48, cy - 12, cx - 128 + 32, cy + 12

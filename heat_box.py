@@ -17,19 +17,20 @@ def collide(a, b):
     return True
 
 class Heat_box:
-    def __init__(self):
-        boy = main_state.get_boy()
-        self.x, self.y = boy.x + 30, boy.y
+    def __init__(self, bg):
+        self.bg = bg
+        self.boy = main_state.get_boy()
+        self.x, self.y = self.boy.x + 30, self.boy.y
         self.attack_time = 1
         self.isFire = False
+        self.timer = 0.001
 
     def draw(self):
-        draw_rectangle(*self.get_bb())
+        pass
 
     def update(self):
         Monster_Bear_List = main_state.get_Monster_Bear_List()
         Monster_Mage_List = main_state.get_Monster_Mage_List()
-        boy = main_state.get_boy()
 
         self.attack_time -= 1
         self.attack_time = clamp(0, self.attack_time, 1)
@@ -41,15 +42,20 @@ class Heat_box:
         for i in range(len(Monster_Bear_List)):
             if collide(self, Monster_Bear_List[i]):
                 game_world.remove_object(self)
-                Monster_Bear_List[i].damaged(boy.STR, self.isFire)
+                Monster_Bear_List[i].damaged(self.boy.STR, self.isFire)
         for i in range(len(Monster_Mage_List)):
             if collide(self, Monster_Mage_List[i]):
-                Monster_Mage_List[i].damaged(boy.STR, self.isFire)
+                game_world.remove_object(self)
+                Monster_Mage_List[i].damaged(self.boy.STR, self.isFire)
+
+        self.timer -= game_framework.frame_time
+        if self.timer < 0:
+            self.timer += 0.001
+            game_world.remove_object(self)
 
     def get_bb(self):
-        boy = main_state.get_boy()
-
-        if boy.dir == 1:
-            return self.x, self.y - 50, self.x + 20, self.y + 10
+        cx, cy = self.x - self.bg.window_left, self.y - self.bg.window_bottom
+        if self.boy.dir == 1:
+            return cx + 30, cy - 30, cx + 50, cy + 30
         else:
-            return self.x - 60, self.y - 50, self.x - 80, self.y + 10
+            return cx - 80, cy - 30, cx - 60, cy + 30

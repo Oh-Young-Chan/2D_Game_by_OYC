@@ -18,5 +18,8 @@ class HP_BAR:
         for i in range(self.draw_per_damaged):
             self.damaged_image.draw(300 - 250 * (i * 0.01), 650)
 
-    def update(self, HP):
+    def update(self):
+        pass
+
+    def trueUpdate(self, HP):
         self.draw_per_damaged = int(100 * (1 - HP * 0.01))
